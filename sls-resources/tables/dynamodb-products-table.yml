@@ -1,0 +1,16 @@
+Resources: 
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ProductsTable
+      AttributeDefinitions: 
+          - AttributeName: id
+            AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema: 
+          - AttributeName: id
+            KeyType: HASH
+
+          # ProvisionedThroughput: 
+          #   ReadCapacityUnits: 1
+          #   WriteCapacityUnits: 1 

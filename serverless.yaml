@@ -1,0 +1,84 @@
+service: boilerplate-nest
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  apiGateway:
+      shouldStartNameWithService: true
+      
+  stage: ${opt:stage, 'dev'}
+  environment: 
+      AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+      NODE_OPTIONS: --enable-source-maps --stack-trace-limit=1000
+  deploymentMethod: direct
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: 
+        - arn:aws:dynamodb:us-east-1:*:table/UsersTable
+        - arn:aws:dynamodb:us-east-1:*:table/ProductsTable
+
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+      Resource: arn:aws:dynamodb:us-east-1:*:table/UsersTable/index/emailIndex
+
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: 
+        - arn:aws:s3:::${self:custom.bucket}/*
+
+
+plugins:
+  - serverless-plugin-optimize
+  - serverless-offline
+  - serverless-dynamodb-local
+
+custom: 
+    esbuild: 
+      bundle: true
+      minify: false
+      sourcemap: true
+      exclude: aws-sdk
+      target: node18
+      define: 'require.resolve: undefined'
+      platform: node
+      concurrency: 10
+
+    bucket: marketplace-sls
+
+    dynamodb: 
+      start: 
+        port: 8000
+        inMemory: true
+        migrate: true
+      seed:
+        domain: dev
+        tableName: UsersTable
+
+     
+
+      stages: dev
+
+functions:
+  app:
+    handler: dist/main.handler
+    events:
+      - http:
+          path: /{any+}
+          method: any
+
+resources:
+  - ${file(sls-resources/tables/dynamodb-users-table.yml)}
+  - ${file(sls-resources/tables/dynamodb-products-table.yml)}
+  - ${file(sls-resources/storage/s3-bucket.yml)}
+
